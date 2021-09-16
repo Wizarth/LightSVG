@@ -2,6 +2,33 @@ include("./validators.jl")
 
 using LightDOM
 
+struct GlobalAttribute
+	name::Symbol
+	validator::Symbol
+	default::Symbol
+
+	GlobalAttribute(name::Symbol, validator::Symbol) = new(name, validator, :none)
+end
+const ga = GlobalAttribute
+
+global_attributes = Dict(
+:core => [
+	ga(:id, :string),
+	ga(:lang, :languageid),
+	ga(:tabindex, :integer),
+	# TODO: xml:base ?
+	# TODO: xml:lang ?
+],
+:styling => [
+	ga(:class, :idstring),
+	ga(:style, :stylestring)
+],
+:presentation => [
+],
+:aria => [
+]
+)
+
 macro generate(def)
 	def.head == :call || error()
 	func_name = def.args[1]
@@ -9,12 +36,30 @@ macro generate(def)
 	
 	props = def.args[2:end]
 	# TODO: Replace any expansion sets with the appropriates
+	for prop in props
+		if prop isa Expr && prop.head === :...
+			dump(prop)
+			attr = get(global_attributes, prop.args[1], Nothing)
+			dump(attr)
+			if attr !== Nothing
+				append!(props, attr)
+			end
+		end
+	end
 	props = filter(props) do prop
-		prop.head !== :...
+		prop isa GlobalAttribute || (prop isa Expr && prop.head !== :...)
 	end
 
 	prop_defs = map(props) do prop
 		prop isa Symbol && error("validator required")
+
+		if prop isa GlobalAttribute
+			default = prop.default
+			if default isa Symbol
+				default = Meta.quot(default)
+			end
+			return Expr(:kw, prop.name, default)
+		end
 
 		prop.head == :kw || error()
 
@@ -36,19 +81,22 @@ macro generate(def)
 		return prop_name
 	end
 	validators = map(props) do prop
-		prop_name = prop.args[1]
 		validator = Nothing
 		default = Nothing
-		if prop.args[2] isa Expr
-			dump(prop.args[2])
-			# A default has been specified, parsed as |(default, validator)
-			default = prop.args[2].args[2]
-			if default isa Symbol
-				default = Meta.quot(default)
-			end
-			validator = prop.args[2].args[3]
+		if prop isa GlobalAttribute
+			prop_name = prop.name
+			validator = prop.validator
+			default = prop.default
 		else
-			validator = prop.args[2]
+			prop_name = prop.args[1]
+			if prop.args[2] isa Expr
+				# dump(prop.args[2])
+				# A default has been specified, parsed as |(default, validator)
+				default = prop.args[2].args[2]
+				validator = prop.args[2].args[3]
+			else
+				validator = prop.args[2]
+			end
 		end
 		validator_symbol = Symbol(string("is", validator))
 		validator_expr = :($validator_symbol($prop_name))
@@ -59,6 +107,9 @@ macro generate(def)
 		end
 
 		# Don't validate, thus don't insert into props, if it's the default
+		if default isa Symbol
+			default = Meta.quot(default)
+		end
 		if default != Nothing
 			validate_set = quote
 			if $prop_name != $default

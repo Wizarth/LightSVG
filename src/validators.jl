@@ -1,4 +1,7 @@
 integer_regex = "[+-]?[0-9]+"
+
+isinteger(val) = val isa Integer || contains(string(val), Regex("^$integer_regex$"))
+
 number_regex = "($integer_regex|[+-]?[0-9]*\\.[0-9]+([Ee]$integer_regex)?)"
 
 function islength(val)
@@ -15,4 +18,7 @@ function islistofnumbers(val)
 	contains(string(val), Regex(number_regex)) # TODO: This is weak
 end
 
-
+# TODO: This is weak
+islanguageid(val) = isstring(val)
+isidstring(val) = isstring(val)
+isstylestring(val) = isstring(val)
