@@ -1,6 +1,6 @@
 integer_regex = "[+-]?[0-9]+"
 
-isinteger(val) = val isa Integer || contains(string(val), Regex("^$integer_regex$"))
+isinteger(val) = val isa Integer || contains(string(val), Regex("^$integer_regex\$"))
 
 number_regex = "($integer_regex|[+-]?[0-9]*\\.[0-9]+([Ee]$integer_regex)?)"
 
@@ -22,3 +22,4 @@ end
 islanguageid(val) = isstring(val)
 isidstring(val) = isstring(val)
 isstylestring(val) = isstring(val)
+isiri(val) = isstring(val)

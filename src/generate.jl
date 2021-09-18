@@ -2,28 +2,87 @@ include("./validators.jl")
 
 using LightDOM
 
-struct GlobalAttribute
+struct Attribute
 	name::Symbol
 	validator::Symbol
-	default::Symbol
+	default::Any
 
-	GlobalAttribute(name::Symbol, validator::Symbol) = new(name, validator, :none)
+	Attribute(name::Symbol, validator::Symbol) = new(name, validator, :none)
+	Attribute(name::Symbol, validator::Symbol, default) = new(name, validator, default)
 end
-const ga = GlobalAttribute
 
 global_attributes = Dict(
 :core => [
-	ga(:id, :string),
-	ga(:lang, :languageid),
-	ga(:tabindex, :integer),
-	# TODO: xml:base ?
-	# TODO: xml:lang ?
+	Attribute(:id, :string),
+	Attribute(:lang, :languageid),
+	Attribute(:tabindex, :integer),
+	Attribute(Symbol("xml:base"), :iri),
+	Attribute(Symbol("xml:lang"), :languageid)
 ],
 :styling => [
-	ga(:class, :idstring),
-	ga(:style, :stylestring)
+	Attribute(:class, :idstring),
+	Attribute(:style, :stylestring)
 ],
 :presentation => [
+	# TODO: Proper validators
+	Attribute(Symbol("alignment-baseline"), :string, :auto),
+	Attribute(Symbol("baseline-shift"), :string, :auto),
+	Attribute(Symbol("clip-path"), :string),
+	Attribute(Symbol("clip-rule"), :string, "nonezero"),
+	Attribute(:color, :string),
+	Attribute(Symbol("color-interpolation"), :string, "sRGB"),
+	Attribute(Symbol("color-interpolation-filters"), :string, "linearRGB"),
+	Attribute(Symbol("color-rendering"), :string, :auto),
+	Attribute(:cursor, :string),
+	Attribute(:d, :string),
+	Attribute(:direction, :string, "ltr"),
+	Attribute(:display, :string),
+	Attribute(Symbol("dominant-baseline"), :string),
+	Attribute(:fill, :string),
+	Attribute(Symbol("fill-opacity"), :string),
+	Attribute(Symbol("fill-rule"), :string, "nonzero"),
+	Attribute(:filter, :string, :none),
+	Attribute(Symbol("flood-color"), :string),
+	Attribute(Symbol("flood-opacity"), :string),
+	Attribute(Symbol("font-family"), :string),
+	Attribute(Symbol("font-size"), :string),
+	Attribute(Symbol("font-size-adjust"), :string),
+	Attribute(Symbol("font-stretch"), :string),
+	Attribute(Symbol("font-style"), :string),
+	Attribute(Symbol("font-variant"), :string),
+	Attribute(Symbol("font-weight"), :string, :normal),
+	Attribute(Symbol("image-rendering"), :string, :auto),
+	Attribute(Symbol("letter-spacing"), :string, :normal),
+	Attribute(Symbol("lighting-color"), :string),
+	Attribute(Symbol("marker-end"), :string, :none),
+	Attribute(Symbol("marker-mid"), :string, :none),
+	Attribute(Symbol("marker-start"), :string, :none),
+	Attribute(:mask, :string),
+	Attribute(:opacity, :number),
+	Attribute(:overflow, :string, "visible"),
+	Attribute(Symbol("pointer-events"), :string, "visiblePainted"),
+	Attribute(Symbol("shape-rendering"), :string),
+	Attribute(Symbol("solid-color"), :string),
+	Attribute(Symbol("solid-opacity"), :string),
+	Attribute(Symbol("stop-color"), :string),
+	Attribute(Symbol("stop-opacity"), :string),
+	Attribute(:stroke, :string),
+	Attribute(Symbol("stroke-dasharray"), :string),
+	Attribute(Symbol("stroke-dashoffset"), :string),
+	Attribute(Symbol("stroke-linecap"), :string, "butt"),
+	Attribute(Symbol("stroke-linejoin"), :string, "miter"),
+	Attribute(Symbol("stroke-miterlimit"), :string),
+	Attribute(Symbol("stroke-opacity"), :string),
+	Attribute(Symbol("stroke-width"), :string),
+	Attribute(Symbol("text-anchor"), :string, :inherit),
+	Attribute(Symbol("text-decoration"), :string, :inherit),
+	Attribute(Symbol("text-rendering"), :string, :auto),
+	Attribute(:transform, :string),
+	Attribute(Symbol("unicode-bidi"), :string),
+	Attribute(Symbol("vector-effect"), :string),
+	Attribute(:visibility, :string, :visible),
+	Attribute(Symbol("word-spacing"), :length, :inherit),
+	Attribute(Symbol("writing-mode"), :string, "lr-tb")
 ],
 :aria => [
 ]
@@ -34,82 +93,70 @@ macro generate(def)
 	func_name = def.args[1]
 	tag = Meta.quot(Symbol(lowercase(string(func_name))))
 	
-	props = def.args[2:end]
-	# TODO: Replace any expansion sets with the appropriates
-	for prop in props
-		if prop isa Expr && prop.head === :...
-			dump(prop)
-			attr = get(global_attributes, prop.args[1], Nothing)
-			dump(attr)
-			if attr !== Nothing
-				append!(props, attr)
-			end
-		end
-	end
-	props = filter(props) do prop
-		prop isa GlobalAttribute || (prop isa Expr && prop.head !== :...)
-	end
-
-	prop_defs = map(props) do prop
+	# Convert Expr's into Attributes to simplify all the codegen parsing later
+	attrs = []
+	for prop in def.args[2:end]
 		prop isa Symbol && error("validator required")
 
-		if prop isa GlobalAttribute
-			default = prop.default
-			if default isa Symbol
-				default = Meta.quot(default)
+		if prop isa Expr 
+			if prop.head === :...
+				# Replace any expansion sets with the appropriates global attributes
+				attr = get(global_attributes, prop.args[1], Nothing)
+				if attr !== Nothing
+					append!(attrs, attr)
+				end
+			elseif prop.head === :kw
+				name = prop.args[1]
+				if prop.args[2] isa Expr
+					# dump(prop.args[2])
+					# A default has been specified, parsed as |(default, validator)
+					default = prop.args[2].args[2]
+					validator = prop.args[2].args[3]
+				else
+					default = Nothing
+					validator = prop.args[2]
+				end
+				attr = Attribute(name, validator, default)
+				push!(attrs, attr)
 			end
-			return Expr(:kw, prop.name, default)
-		end
-
-		prop.head == :kw || error()
-
-		prop_name = prop.args[1]
-		# prop.args 
-		if prop.args[2] isa Expr
-			# A default has been specified, parsed as |(default, validator)
-			prop.args[2].head == :call || error()
-			prop.args[2].args[1] == :| || error()
-			default = prop.args[2].args[2]
-			# If it's a symbol, put it back in as a quoted symbol. This is a convenience
-			if default isa Symbol
-				default = Meta.quot(default)
-			end
-			return Expr(:kw, prop_name, default)
-		end
-		# We don't care about validators here
-		
-		return prop_name
-	end
-	validators = map(props) do prop
-		validator = Nothing
-		default = Nothing
-		if prop isa GlobalAttribute
-			prop_name = prop.name
-			validator = prop.validator
-			default = prop.default
 		else
-			prop_name = prop.args[1]
-			if prop.args[2] isa Expr
-				# dump(prop.args[2])
-				# A default has been specified, parsed as |(default, validator)
-				default = prop.args[2].args[2]
-				validator = prop.args[2].args[3]
-			else
-				validator = prop.args[2]
-			end
+			error("Unknown prop")
 		end
+
+		
+	end
+
+	prop_defs = map(attrs) do attr
+		default = attr.default
+		if default === Nothing
+			return attr.name
+		end
+		# Symbols should be treated as quoted symbols, except for Nothing
+		if default isa Symbol && default !== :Nothing
+			default = Meta.quot(default)
+		end
+		Expr(:kw, attr.name, default)
+	end
+
+	validators = map(attrs) do attr
+		prop_name = attr.name
+		validator = attr.validator
+		default = attr.default
+
 		validator_symbol = Symbol(string("is", validator))
 		validator_expr = :($validator_symbol($prop_name))
 
+		validator_error = string( string(prop_name), " must be ", string(validator))
 		validate_set = quote 
-			$validator_expr || error()
+			$validator_expr || error($validator_error)
 			props[$(Meta.quot(prop_name))] = $prop_name
 		end
 
-		# Don't validate, thus don't insert into props, if it's the default
-		if default isa Symbol
+		# Symbols should be treated as quoted symbols, except for Nothing
+		if default isa Symbol && default !== :Nothing
 			default = Meta.quot(default)
 		end
+		# Don't validate, thus don't insert into props, if it's the default
 		if default != Nothing
 			validate_set = quote
 			if $prop_name != $default

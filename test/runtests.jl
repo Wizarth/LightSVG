@@ -29,17 +29,21 @@ using LightSVG
 	@test LightSVG.islength("x1pc") == false
 end
 
+
 @testset "SVG" begin
 	@testset "defaults" begin
 		svg = SVG()
 		@test svg isa Element
-		@test hasproperty(svg.props, :width) == false
-		@test hasproperty(svg.props, :height) == false
+		@test haskey(svg.props, :width) == false
+		@test haskey(svg.props, :height) == false
 
 		svg = SVG(;width=:auto, height=:auto)
 		@test svg isa Element
-		@test hasproperty(svg.props, :width) == false
-		@test hasproperty(svg.props, :height) == false
+		@test haskey(svg.props, :width) == false
+		@test haskey(svg.props, :height) == false
+
+		svg = SVG(viewBox=Nothing)
+		@test haskey(svg.props, :viewBox) == false
 	end
 	@testset "lengths" begin
 		length = 1
@@ -48,5 +52,14 @@ end
 		@test svg isa Element
 		@test svg.props[:width] == length
 		@test svg.props[:height] == length
+	end
+
+	@testset "core attributes" begin
+		svg = SVG()
+		@test haskey(svg.props, Symbol("xml:base")) == false
+
+		base = "http://example.com/base"
+		svg = SVG(;var"xml:base" = base)
+		@test get(svg.props, Symbol("xml:base"), Nothing) == base
 	end
 end
