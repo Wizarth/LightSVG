@@ -1,22 +1,23 @@
 integer_regex = "[+-]?[0-9]+"
 
-isinteger(val) = val isa Integer || contains(string(val), Regex("^$integer_regex\$"))
+isinteger(::Integer) = true
+isinteger(val) = contains(string(val), Regex("^$integer_regex\$"))
 
 number_regex = "($integer_regex|[+-]?[0-9]*\\.[0-9]+([Ee]$integer_regex)?)"
 
-function islength(val)
-	val isa Real && return true
-	contains(string(val), Regex("^($number_regex(em|ex|px|in|cm|mm|pt|pc|%)?)\$"))
-end
+isnumber(::Real) = true
+isnumber(val) = contains(string(val), Regex("^$number_regex\$"))
 
-isstring(val) = val isa AbstractString
+islength(::Real) = true
+islength(val) = contains(string(val), Regex("^($number_regex(em|ex|px|in|cm|mm|pt|pc|%)?)\$"))
 
-ispreserve_aspect_ratio(val) = contains(string(val), r"^(none|xMinYMin|xMidYMin|xMaxYMin|xMinYMid|xMidYMid|xMaxYMid|xMinYMax|xMidYMax|xMaxYMax) (meet|slice)?$")
+isstring(::AbstractString) = true
+isstring(val) = false
 
-function islistofnumbers(val)
-	val isa AbstractVector{Real} && return true
-	contains(string(val), Regex(number_regex)) # TODO: This is weak
-end
+ispreserve_aspect_ratio(val) = contains(string(val), r"^(none|xMinYMin|xMidYMin|xMaxYMin|xMinYMid|xMidYMid|xMaxYMid|xMinYMax|xMidYMax|xMaxYMax)( meet| slice)?$")
+
+islistofnumbers(::AbstractVector{Real}) = true
+islistofnumbers(val) = contains(string(val), Regex(number_regex)) # TODO: This is weak
 
 # TODO: This is weak
 islanguageid(val) = isstring(val)
