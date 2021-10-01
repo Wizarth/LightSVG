@@ -88,6 +88,16 @@ global_attributes = Dict(
 ]
 )
 
+function setprop!(props, name, value, validator, errormsg)
+	validator(value) || error(errormsg)
+	props[name] = value
+end
+function setprop!(props, name, value, default, validator, errormsg)
+	if value != default
+		setprop!(props, name, value, validator, errormsg)
+	end
+end
+
 macro generate(def)
 	def.head == :call || error()
 	func_name = def.args[1]
@@ -147,24 +157,15 @@ macro generate(def)
 		validator_expr = :($validator_symbol($prop_name))
 
 		validator_error = string( string(prop_name), " must be ", string(validator))
-		validate_set = quote 
-			$validator_expr || error($validator_error)
-			props[$(Meta.quot(prop_name))] = $prop_name
-		end
-
-		# Symbols should be treated as quoted symbols, except for Nothing
-		if default isa Symbol && default !== :Nothing
-			default = Meta.quot(default)
-		end
-		# Don't validate, thus don't insert into props, if it's the default
-		if default != Nothing
-			validate_set = quote
-			if $prop_name != $default
-				$validate_set
+		if default === Nothing
+			:(setprop!(props, $(Meta.quot(prop_name)), $prop_name, $validator_symbol, $validator_error))
+		else
+			# Symbols should be treated as quoted symbols, except for Nothing
+			if default isa Symbol && default !== :Nothing
+				default = Meta.quot(default)
 			end
-			end
+			:(setprop!(props, $(Meta.quot(prop_name)), $prop_name, $default, $validator_symbol, $validator_error))
 		end
-		validate_set
 	end
 
 	func = quote
