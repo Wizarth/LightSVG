@@ -119,6 +119,9 @@ end
 		svg = SVG(viewBox=Nothing)
 		@test haskey(svg.props, :viewBox) == false
 	end
+	@testset "invalid properties" begin
+		@test_throws SVG(id=1)	#id must be string
+	end
 	@testset "lengths" begin
 		length = 1
 
