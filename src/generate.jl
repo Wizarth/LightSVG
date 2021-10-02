@@ -89,8 +89,7 @@ global_attributes = Dict(
 )
 
 function setprop!(props, name, value, validator)
-	validator_symbol = Symbol(string("is", validator))
-	eval(validator_symbol)(value) || error(string(name, " must be ", validator))
+	istype(value, Val(validator)) || error(string(name, " must be ", validator))
 	props[name] = value
 end
 function setprop!(props, name, value, default, validator)

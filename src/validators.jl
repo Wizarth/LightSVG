@@ -1,26 +1,31 @@
+# Dispatch based on Val{}
+# Originally called isa but this eclipsed base.isa when doing
+# val isa Symbol
+
 integer_regex = "[+-]?[0-9]+"
 
-isinteger(::Integer) = true
-isinteger(val) = contains(string(val), Regex("^$integer_regex\$"))
+istype(::Integer, ::Val{:integer}) = true
+istype(val, ::Val{:integer}) = contains(string(val), Regex("^$integer_regex\$"))
 
 number_regex = "($integer_regex|[+-]?[0-9]*\\.[0-9]+([Ee]$integer_regex)?)"
 
-isnumber(::Real) = true
-isnumber(val) = contains(string(val), Regex("^$number_regex\$"))
+istype(::Real, ::Val{:number}) = true
+istype(val, ::Val{:number}) = contains(string(val), Regex("^$number_regex\$"))
 
-islength(::Real) = true
-islength(val) = contains(string(val), Regex("^($number_regex(em|ex|px|in|cm|mm|pt|pc|%)?)\$"))
+istype(::Real, ::Val{:length}) = true
+istype(val, ::Val{:length}) = contains(string(val), Regex("^($number_regex(em|ex|px|in|cm|mm|pt|pc|%)?)\$"))
 
-isstring(::AbstractString) = true
-isstring(val) = false
+istype(::AbstractString, ::Val{:string}) = true
+istype(val, ::Val{:string}) = false
 
-ispreserve_aspect_ratio(val) = contains(string(val), r"^(none|xMinYMin|xMidYMin|xMaxYMin|xMinYMid|xMidYMid|xMaxYMid|xMinYMax|xMidYMax|xMaxYMax)( meet| slice)?$")
+istype(val, ::Val{:preserve_aspect_ratio}) = contains(string(val), r"^(none|xMinYMin|xMidYMin|xMaxYMin|xMinYMid|xMidYMid|xMaxYMid|xMinYMax|xMidYMax|xMaxYMax)( meet| slice)?$")
 
-islistofnumbers(::AbstractVector{Real}) = true
-islistofnumbers(val) = contains(string(val), Regex(number_regex)) # TODO: This is weak
+istype(::AbstractVector{Real}, ::Val{:listofnumbers}) = true
+istype(val, ::Val{:listofnumbers}) = contains(string(val), Regex(number_regex)) # TODO: This is weak
 
 # TODO: This is weak
-islanguageid(val) = isstring(val)
-isidstring(val) = isstring(val)
-isstylestring(val) = isstring(val)
-isiri(val) = isstring(val)
+istype(val, ::Val{:languageid}) = istype(val, Val(:string))
+istype(val, ::Val{:idstring}) = istype(val, Val(:string))
+istype(val, ::Val{:stylestring}) = istype(val, Val(:string))
+istype(val, ::Val{:iri}) = istype(val, Val(:string))
+

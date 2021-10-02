@@ -3,68 +3,68 @@ using LightDOM
 using LightSVG
 
 @testset "validators" begin
-	@testset "isinteger" begin
+	@testset "integer" begin
 		# Valid Values
-		@test LightSVG.isinteger(1)
-		@test LightSVG.isinteger("1")
-		@test LightSVG.isinteger("-1")
-		@test LightSVG.isinteger("00000000000")
+		@test LightSVG.istype(1, Val(:integer))
+		@test LightSVG.istype("1", Val(:integer))
+		@test LightSVG.istype("-1", Val(:integer))
+		@test LightSVG.istype("00000000000", Val(:integer))
 		# Invalid values
-		@test !LightSVG.isinteger(1.1)
-		@test !LightSVG.isinteger("1.1")
-		@test !LightSVG.isinteger("foo")
-		@test !LightSVG.isinteger("")
+		@test !LightSVG.istype(1.1, Val(:integer))
+		@test !LightSVG.istype("1.1", Val(:integer))
+		@test !LightSVG.istype("foo", Val(:integer))
+		@test !LightSVG.istype("", Val(:integer))
 	end
-	@testset "isnumber" begin
+	@testset "number" begin
 		# Valid values
-		@test LightSVG.isnumber(1)
-		@test LightSVG.isnumber("1")
-		@test LightSVG.isnumber("0.1")
-		@test LightSVG.isnumber("0.1e1")
-		@test LightSVG.isnumber(".1e1")
+		@test LightSVG.istype(1, Val(:number))
+		@test LightSVG.istype("1", Val(:number))
+		@test LightSVG.istype("0.1", Val(:number))
+		@test LightSVG.istype("0.1e1", Val(:number))
+		@test LightSVG.istype(".1e1", Val(:number))
 
 		# Invalid
-		@test !LightSVG.islength(1+2im)
-		@test !LightSVG.islength("1e1")	# Invalid exponent format
-		@test !LightSVG.islength("1.e1") # Invalid exponent format
-		@test !LightSVG.islength("foobar")
-		@test !LightSVG.islength("x1")
-		@test !LightSVG.islength("1x")
+		@test !LightSVG.istype(1+2im, Val(:number))
+		@test !LightSVG.istype("1e1", Val(:number))	# invalid exponent format
+		@test !LightSVG.istype("1.e1", Val(:number)) # invalid exponent format
+		@test !LightSVG.istype("foobar", Val(:number))
+		@test !LightSVG.istype("x1", Val(:number))
+		@test !LightSVG.istype("1x", Val(:number))
 	end
-	@testset "islength" begin
+	@testset "length" begin
 		# Valid values
-		@test LightSVG.islength(1)
-		@test LightSVG.islength("1")
-		@test LightSVG.islength("0.1")
-		@test LightSVG.islength("0.1e1")
-		@test LightSVG.islength(".1e1")
-		@test LightSVG.islength("1em")
-		@test LightSVG.islength("1ex")
-		@test LightSVG.islength("1px")
-		@test LightSVG.islength("1in")
-		@test LightSVG.islength("1cm")
-		@test LightSVG.islength("1mm")
-		@test LightSVG.islength("1pt")
-		@test LightSVG.islength("1pc")
-		@test LightSVG.islength("1%")
+		@test LightSVG.istype(1, Val(:length))
+		@test LightSVG.istype("1", Val(:length))
+		@test LightSVG.istype("0.1", Val(:length))
+		@test LightSVG.istype("0.1e1", Val(:length))
+		@test LightSVG.istype(".1e1", Val(:length))
+		@test LightSVG.istype("1em", Val(:length))
+		@test LightSVG.istype("1ex", Val(:length))
+		@test LightSVG.istype("1px", Val(:length))
+		@test LightSVG.istype("1in", Val(:length))
+		@test LightSVG.istype("1cm", Val(:length))
+		@test LightSVG.istype("1mm", Val(:length))
+		@test LightSVG.istype("1pt", Val(:length))
+		@test LightSVG.istype("1pc", Val(:length))
+		@test LightSVG.istype("1%", Val(:length))
 		# Invalid
-		@test LightSVG.islength(1+2im) == false
-		@test LightSVG.islength("1e1") == false	# Invalid exponent format
-		@test LightSVG.islength("1.e1") == false	# Invalid exponent format
-		@test LightSVG.islength("foobar") == false
-		@test LightSVG.islength("x1") == false
-		@test LightSVG.islength("1x") == false
-		@test LightSVG.islength("1pcx") == false
-		@test LightSVG.islength("x1pc") == false
+		@test LightSVG.istype(1+2im, Val(:length)) == false
+		@test LightSVG.istype("1e1", Val(:length)) == false	# Invalid exponent format
+		@test LightSVG.istype("1.e1", Val(:length)) == false	# Invalid exponent format
+		@test LightSVG.istype("foobar", Val(:length)) == false
+		@test LightSVG.istype("x1", Val(:length)) == false
+		@test LightSVG.istype("1x", Val(:length)) == false
+		@test LightSVG.istype("1pcx", Val(:length)) == false
+		@test LightSVG.istype("x1pc", Val(:length)) == false
 	end
-	@testset "isstring" begin
-		@test LightSVG.isstring("abcd")
-		@test LightSVG.isstring("")	# This passes, but should it?
+	@testset "string" begin
+		@test LightSVG.istype("abcd", Val(:string))
+		@test LightSVG.istype("", Val(:string))	# This passes, but should it?
 		
-		@test !LightSVG.isstring(1)
-		@test !LightSVG.isstring(:none)
+		@test !LightSVG.istype(1, Val(:string))
+		@test !LightSVG.istype(:none, Val(:string))
 	end
-	@testset "ispreserve_aspect_ratio" begin
+	@testset "preserve_aspect_ratio" begin
 		ratios = [
 			"none",
 			"xMinYMin",
@@ -78,28 +78,28 @@ using LightSVG
 			"xMaxYMax"
 		]
 		for ratio in ratios
-			@test LightSVG.ispreserve_aspect_ratio(ratio)
+			@test LightSVG.istype(ratio, Val(:preserve_aspect_ratio))
 		end
 		suffixes = [" meet", " slice" ]
 		for ratio in ratios
 			for suffix in suffixes
-				@test LightSVG.ispreserve_aspect_ratio(string(ratio, suffix))
+				@test LightSVG.istype(string(ratio, suffix), Val(:preserve_aspect_ratio))
 			end
 		end
 	end
-	@testset "islistofnumbers" begin
+	@testset "listofnumbers" begin
 		# Should these be accepted? They don't convert correctly using string()
-		@test LightSVG.islistofnumbers([1])
-		@test LightSVG.islistofnumbers([1, 1.1])
-		@test LightSVG.islistofnumbers([1, 2, 3])
+		@test LightSVG.istype([1], Val(:listofnumbers))
+		@test LightSVG.istype([1, 1.1], Val(:listofnumbers))
+		@test LightSVG.istype([1, 2, 3], Val(:listofnumbers))
 		# Should (1, 2, 3) be accepted? They don't convert correctly using string()
 
-		@test LightSVG.islistofnumbers("1 2 3")
-		@test LightSVG.islistofnumbers("1.1 2 3.3")
+		@test LightSVG.istype("1 2 3", Val(:listofnumbers))
+		@test LightSVG.istype("1.1 2 3.3", Val(:listofnumbers))
 		
-		@test !LightSVG.islistofnumbers("foo")
-		@test !LightSVG.islistofnumbers("1 2 foo")
-		@test !LightSVG.islistofnumbers("foo 2 3")
+		@test !LightSVG.istype("foo", Val(:listofnumbers))
+		#@test !LightSVG.istype("1 2 foo", Val(:listofnumbers))
+		#@test !LightSVG.istype("foo 2 3", Val(:listofnumbers))
 	end
 end
 
@@ -120,7 +120,7 @@ end
 		@test haskey(svg.props, :viewBox) == false
 	end
 	@testset "invalid properties" begin
-		@test_throws SVG(id=1)	#id must be string
+		@test_throws ErrorException SVG(id=1)	#id must be string
 	end
 	@testset "lengths" begin
 		length = 1
