@@ -89,8 +89,8 @@ global_attributes = Dict(
 )
 
 function setprop!(props, name, value, validator)
-	istype(value, Val(validator)) || error(string(name, " must be ", validator))
-	props[name] = value
+	istype(value, validator) || error(string(name, " must be ", validator))
+	props[name] = toprop(value, validator)
 end
 function setprop!(props, name, value, default, validator)
 	if value != default
